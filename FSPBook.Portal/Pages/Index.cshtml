@@ -1,0 +1,156 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Posts";
+}
+
+<div class="container">
+    <div class="row">
+        <!-- Sidebar for Feeds -->
+        <div class="col sidebar">
+            <h2>Latest Tech News</h2>
+            <ul>
+                @foreach (var article in Model.PostViewModel.Feeds)
+                {
+                    <li class="news-item">
+                        <a href="@article.Url" target="_blank">
+                            <h3>@article.Title</h3>
+                            <p>@article.Description</p>
+                        </a>
+                        <span class="published-at">@article.PublishedAt</span>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <!-- Posts Section -->
+        <div class="col posts-section">
+            <h2>Posts</h2>
+            @if (Model.PostViewModel.Posts != null && Model.PostViewModel.Posts.Any())
+            {
+                @foreach (var post in Model.PostViewModel.Posts)
+                {
+                    <div class="post-item">
+                        <h4>@post.Author.FullName</h4>
+                        <p>@post.Content</p>
+                        <small>Posted on: @post.DateTimePosted.ToLocalTime().ToString("MM-dd-yyyy HH:mm")</small>
+                    </div>
+                }
+            }
+            else
+            {
+                <p>No posts available.</p>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+
+    .container {
+        display: flex;
+        gap: 20px;
+    }
+
+    .sidebar,
+    .posts-section {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+
+    .sidebar {
+        flex: 1;
+    }
+
+    .posts-section {
+        flex: 2;
+    }
+
+    h2 {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+
+    .news-item {
+        margin-bottom: 10px;
+    }
+
+    .news-item h3 {
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .news-item p {
+        margin: 5px 0;
+        color: #555;
+    }
+
+    .news-item .published-at {
+        font-size: 12px;
+        color: #888;
+    }
+
+    .post-item {
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+
+    .post-item h4 {
+        font-size: 16px;
+        margin: 0 0 5px;
+    }
+
+    .post-item p {
+        margin: 0 0 10px;
+    }
+
+    .post-item small {
+        font-size: 12px;
+        color: #888;
+    }
+
+</style>
+
+
+@section Scripts
+    {
+    <script>
+        let pageNumber = 1;
+        let hasMorePosts = @Model.PostViewModel.HasMorePosts.ToString().ToLower();
+
+        window.onscroll = function () {
+            if (window.innerHeight + window.scrollY >= document.body.scrollHeight) {
+                loadMorePosts();
+            }
+        };
+
+        function loadMorePosts() {
+            if (!hasMorePosts) return;
+
+            pageNumber++;
+            document.getElementById('loading').style.display = 'block';
+            hasMorePosts = false;
+
+            fetch(`/Index?pageNumber=${pageNumber}`)
+                .then(response => response.text())
+                .then(data => {
+                    hasMorePosts = data.HasMorePosts;
+                    console.log("More posts:", hasMorePosts);
+                    const postsContainer = document.getElementById('posts-container');
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(data, 'text/html');
+                    const newPosts = doc.querySelectorAll('#posts-container .border');
+
+                    newPosts.forEach(post => {
+                        postsContainer.appendChild(post);
+                    });
+
+                    document.getElementById('loading').style.display = 'none';
+                });
+        }
+    </script>
+}
